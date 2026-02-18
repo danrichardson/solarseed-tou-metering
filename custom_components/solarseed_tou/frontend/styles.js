@@ -117,14 +117,14 @@ export const PANEL_CSS = `
   }
   .tier-bar.stuck { box-shadow: 0 4px 20px rgba(0,0,0,.4); border-bottom: 1px solid #1a2838; }
   .tier-btn {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 4px 10px; border: 2px solid transparent;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border: 2px solid transparent;
     border-radius: 7px; cursor: pointer; transition: all .12s;
   }
   .tier-btn:hover { filter: brightness(1.15); }
-  .tier-btn.active { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,.2); }
-  .tier-dot { width: 10px; height: 10px; border-radius: 3px; }
-  .tier-rate { font-size: 10px; color: #6a829e; }
+  .tier-btn.active { border-color: #fff; box-shadow: 0 0 12px rgba(255,255,255,.25); }
+  .tier-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .tier-rate { font-size: 11px; color: #8fa3be; }
 
   /* Grid */
   .grid-card { padding: 0; overflow: hidden; }
