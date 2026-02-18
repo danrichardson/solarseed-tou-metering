@@ -94,8 +94,7 @@ class TOUCurrentRateSensor(TOUBaseSensor):
         super().__init__(entry, schedule)
         self._attr_unique_id = f"{entry.entry_id}_current_rate"
 
-    @callback
-    def async_update(self) -> None:
+    def update(self) -> None:
         """Update current rate."""
         now = dt_util.now()
         self._attr_native_value = round(self._schedule.get_rate(now), 6)
@@ -128,8 +127,7 @@ class TOUCurrentTierSensor(TOUBaseSensor):
         super().__init__(entry, schedule)
         self._attr_unique_id = f"{entry.entry_id}_current_tier"
 
-    @callback
-    def async_update(self) -> None:
+    def update(self) -> None:
         """Update current tier."""
         now = dt_util.now()
         tier = self._schedule.get_tier(now)
@@ -232,8 +230,7 @@ class TOUCostAccumulatorSensor(TOUBaseSensor, RestoreEntity):
         """Check if accumulator should reset. Override in subclasses."""
         pass
 
-    @callback
-    def async_update(self) -> None:
+    def update(self) -> None:
         """Periodic update."""
         self._check_reset()
         self._attr_native_value = round(self._cost, 4)
