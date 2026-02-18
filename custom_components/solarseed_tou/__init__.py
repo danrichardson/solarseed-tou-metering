@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import DOMAIN, CONF_ENERGY_SENSOR
 from .schedule import TOUSchedule
@@ -153,9 +154,8 @@ def _async_register_websocket(hass: HomeAssistant) -> None:
         # Update the live schedule
         entry_data["schedule"] = schedule
 
-        # Notify sensors to update
-        # (sensors reference the schedule object, so they'll pick it up
-        #  on their next update cycle)
+        # Notify sensors to pick up new schedule immediately
+        async_dispatcher_send(hass, f"{DOMAIN}_config_updated", schedule)
 
         connection.send_result(msg["id"], {"success": True})
 

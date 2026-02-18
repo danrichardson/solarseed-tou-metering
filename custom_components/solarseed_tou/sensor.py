@@ -14,6 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy
 from homeassistant.core import HomeAssistant, callback, Event, State
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
@@ -62,9 +63,21 @@ class TOUBaseSensor(SensorEntity):
             "sw_version": "0.1.0",
         }
 
-    def update_schedule(self, schedule: TOUSchedule) -> None:
-        """Update the schedule reference (called when config changes)."""
+    async def async_added_to_hass(self) -> None:
+        """Register dispatcher listener when added to HA."""
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                f"{DOMAIN}_config_updated",
+                self._handle_config_update,
+            )
+        )
+
+    @callback
+    def _handle_config_update(self, schedule: TOUSchedule) -> None:
+        """Handle config changes from the panel or options flow."""
         self._schedule = schedule
+        self.async_write_ha_state()
 
 
 class TOUCurrentRateSensor(TOUBaseSensor):
