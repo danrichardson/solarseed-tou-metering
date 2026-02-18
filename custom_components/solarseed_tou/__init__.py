@@ -7,7 +7,7 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.components import websocket_api
+from homeassistant.components import frontend, websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -87,7 +87,8 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
         _LOGGER.debug("Static path already registered or error: %s", err)
 
     try:
-        hass.components.frontend.async_register_built_in_panel(
+        frontend.async_register_built_in_panel(
+            hass,
             "custom",
             sidebar_title="TOU Metering",
             sidebar_icon="mdi:lightning-bolt",
