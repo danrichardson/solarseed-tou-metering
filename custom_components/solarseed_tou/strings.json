@@ -3,9 +3,9 @@
     "step": {
       "user": {
         "title": "Solarseed TOU Energy Metering",
-        "description": "Select the energy sensor to track. This should be a kWh sensor from your energy meter.\n\nAfter setup, configure your rate schedule in the TOU Metering panel (sidebar).\n\n[Documentation]({docs_url})",
+        "description": "Select the energy or power sensor to track. Supports cumulative energy sensors (kWh, Wh) and instantaneous power sensors (W, kW).\n\nAfter setup, configure your rate schedule in the TOU Metering panel (sidebar).\n\n[Documentation]({docs_url})",
         "data": {
-          "energy_sensor": "Energy sensor (kWh)"
+          "energy_sensor": "Energy or power sensor"
         }
       }
     },
@@ -20,7 +20,7 @@
         "title": "TOU Metering Configuration",
         "description": "Change the energy sensor or paste YAML to import rate schedules.\n\nExport YAML from the [TOU Rate Calculator](https://johnnysolarseed.com/tou-calculator) or the [TOU Metering panel]({panel_url}).\n\nLeave YAML empty to save sensor change only.",
         "data": {
-          "energy_sensor": "Energy sensor (kWh)",
+          "energy_sensor": "Energy or power sensor",
           "yaml_config": "YAML configuration (optional)"
         }
       }

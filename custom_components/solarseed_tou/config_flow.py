@@ -8,7 +8,6 @@ import voluptuous as vol
 import yaml
 
 from homeassistant import config_entries
-from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.helpers import selector
 
 from .const import DOMAIN, CONF_ENERGY_SENSOR
@@ -54,7 +53,6 @@ class SolarseedTOUConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_ENERGY_SENSOR): selector.EntitySelector(
                     selector.EntitySelectorConfig(
                         domain="sensor",
-                        device_class=SensorDeviceClass.ENERGY,
                     ),
                 ),
             }),
@@ -152,7 +150,6 @@ class SolarseedTOUOptionsFlow(config_entries.OptionsFlow):
                     ): selector.EntitySelector(
                         selector.EntitySelectorConfig(
                             domain="sensor",
-                            device_class=SensorDeviceClass.ENERGY,
                         ),
                     ),
                     vol.Optional("yaml_config", default=""): selector.TextSelector(
