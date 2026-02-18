@@ -73,58 +73,88 @@ class SolarseedTOUConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class SolarseedTOUOptionsFlow(config_entries.OptionsFlow):
-    """Handle options for Solarseed TOU — YAML paste import."""
+    """Handle options for Solarseed TOU — sensor change + YAML paste import."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Options step — paste YAML config to import schedule."""
+        """Options step — change sensor and/or paste YAML config."""
         errors: dict[str, str] = {}
 
+        current_sensor = self.config_entry.data.get(CONF_ENERGY_SENSOR, "")
+
         if user_input is not None:
+            new_sensor = user_input.get(CONF_ENERGY_SENSOR, current_sensor).strip()
             yaml_text = user_input.get("yaml_config", "").strip()
 
-            if not yaml_text:
-                # Nothing pasted — close without changes
-                return self.async_create_entry(title="", data={})
+            # Validate sensor if changed
+            sensor_changed = new_sensor and new_sensor != current_sensor
+            if sensor_changed:
+                state = self.hass.states.get(new_sensor)
+                if state is None:
+                    errors[CONF_ENERGY_SENSOR] = "sensor_not_found"
 
-            try:
-                parsed = yaml.safe_load(yaml_text)
-            except yaml.YAMLError:
-                errors["yaml_config"] = "invalid_yaml"
-            else:
-                # Accept with or without the tou_metering wrapper
-                if isinstance(parsed, dict) and "tou_metering" in parsed:
-                    parsed = parsed["tou_metering"]
+            if not errors:
+                # Update sensor in config entry if changed
+                if sensor_changed:
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry,
+                        data={**self.config_entry.data, CONF_ENERGY_SENSOR: new_sensor},
+                    )
+                    # Also update in storage
+                    entry_data = self.hass.data[DOMAIN].get(
+                        self.config_entry.entry_id
+                    )
+                    if entry_data:
+                        storage = entry_data["storage"]
+                        stored = await storage.async_load()
+                        stored["energy_sensor"] = new_sensor
+                        await storage.async_save(stored)
 
-                if not isinstance(parsed, dict):
-                    errors["yaml_config"] = "invalid_yaml"
-                else:
+                # Handle YAML import if provided
+                if yaml_text:
                     try:
-                        # Preserve energy sensor from the config entry
-                        parsed["energy_sensor"] = self.config_entry.data.get(
-                            CONF_ENERGY_SENSOR, ""
-                        )
-                        # Validate by building a schedule
-                        schedule = TOUSchedule.from_dict(parsed)
+                        parsed = yaml.safe_load(yaml_text)
+                    except yaml.YAMLError:
+                        errors["yaml_config"] = "invalid_yaml"
+                    else:
+                        if isinstance(parsed, dict) and "tou_metering" in parsed:
+                            parsed = parsed["tou_metering"]
 
-                        # Persist and update live schedule
-                        entry_data = self.hass.data[DOMAIN].get(
-                            self.config_entry.entry_id
-                        )
-                        if entry_data:
-                            storage = entry_data["storage"]
-                            await storage.async_save(parsed)
-                            entry_data["schedule"] = schedule
+                        if not isinstance(parsed, dict):
+                            errors["yaml_config"] = "invalid_yaml"
+                        else:
+                            try:
+                                effective_sensor = new_sensor if sensor_changed else current_sensor
+                                parsed["energy_sensor"] = effective_sensor
+                                schedule = TOUSchedule.from_dict(parsed)
 
-                        return self.async_create_entry(title="", data={})
-                    except Exception:  # noqa: BLE001
-                        errors["yaml_config"] = "invalid_config"
+                                entry_data = self.hass.data[DOMAIN].get(
+                                    self.config_entry.entry_id
+                                )
+                                if entry_data:
+                                    storage = entry_data["storage"]
+                                    await storage.async_save(parsed)
+                                    entry_data["schedule"] = schedule
+
+                            except Exception:  # noqa: BLE001
+                                errors["yaml_config"] = "invalid_config"
+
+                if not errors:
+                    return self.async_create_entry(title="", data={})
 
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Required(
+                        CONF_ENERGY_SENSOR, default=current_sensor
+                    ): selector.EntitySelector(
+                        selector.EntitySelectorConfig(
+                            domain="sensor",
+                            device_class=SensorDeviceClass.ENERGY,
+                        ),
+                    ),
                     vol.Optional("yaml_config", default=""): selector.TextSelector(
                         selector.TextSelectorConfig(multiline=True),
                     ),
