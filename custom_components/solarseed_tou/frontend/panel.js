@@ -189,6 +189,10 @@ class SolarseedTOUPanel extends HTMLElement {
     this._holTierOpen = false;
     this._initialized = false;
     this._toastTimeout = null;
+    this._boundEvents = false;
+    this._observer = null;
+    this._holTierCloseHandler = null;
+    this._mouseUpHandler = null;
   }
 
   set hass(value) {
@@ -280,7 +284,8 @@ class SolarseedTOUPanel extends HTMLElement {
           <div class="sensor-info">
             <div class="lbl" style="margin-bottom:0">Energy Sensor</div>
             <div class="sensor-entity">${s.energy_sensor}</div>
-            <span class="hint">kWh sensor \u2014 configured in integration setup</span>
+            <span class="hint">kWh sensor</span>
+            <button class="btn btn-sm" data-action="edit-sensor" style="margin-left:auto" title="Change in integration settings">\u270E Configure</button>
           </div>
         </div>
 
@@ -556,77 +561,83 @@ class SolarseedTOUPanel extends HTMLElement {
   _bindEvents() {
     const root = this.shadowRoot;
 
-    // Global mouseup — stop drag
-    const mouseUp = () => { this._dragging = false; };
-    root.addEventListener("mouseup", mouseUp);
-    document.addEventListener("mouseup", mouseUp);
+    // --- Permanent listeners (bind once, survive innerHTML rebuilds) ---
+    if (!this._boundEvents) {
+      this._boundEvents = true;
 
-    // Action delegation — click
-    root.addEventListener("click", (e) => {
-      // Stop propagation for modal/dropdown inner clicks
-      if (e.target.closest("[data-stop-propagation]")) {
-        if (!e.target.closest("[data-action]")) return;
-      }
+      // Global mouseup — stop drag
+      this._mouseUpHandler = () => { this._dragging = false; };
+      root.addEventListener("mouseup", this._mouseUpHandler);
+      document.addEventListener("mouseup", this._mouseUpHandler);
 
-      const actionEl = e.target.closest("[data-action]");
-      if (!actionEl) return;
-      const action = actionEl.dataset.action;
+      // Action delegation — click
+      root.addEventListener("click", (e) => {
+        const actionEl = e.target.closest("[data-action]");
+        if (!actionEl) return;
 
-      switch (action) {
-        case "select-season": this._selectSeason(actionEl.dataset.id); break;
-        case "remove-season": this._removeSeason(actionEl.dataset.id); break;
-        case "add-season": this._addSeason(); break;
-        case "paint-month": this._paintMonth(parseInt(actionEl.dataset.idx)); break;
+        // Stop propagation for modal/dropdown inner clicks:
+        // If click is inside a [data-stop-propagation] zone, only allow
+        // actions whose element is also inside that zone.
+        const stopEl = e.target.closest("[data-stop-propagation]");
+        if (stopEl && !stopEl.contains(actionEl)) return;
 
-        case "select-tier": this._selectTier(actionEl.dataset.id); break;
-        case "add-tier": this._addTier(); break;
+        const action = actionEl.dataset.action;
 
-        case "fill-all": this._fillRange(0, 6); break;
-        case "fill-weekdays": this._fillRange(0, 4); break;
-        case "fill-weekends": this._fillRange(5, 6); break;
-        case "fill-row": this._fillRow(parseInt(actionEl.dataset.row)); break;
-        case "fill-col": this._fillCol(parseInt(actionEl.dataset.col)); break;
+        switch (action) {
+          case "select-season": this._selectSeason(actionEl.dataset.id); break;
+          case "remove-season": this._removeSeason(actionEl.dataset.id); break;
+          case "add-season": this._addSeason(); break;
+          case "paint-month": this._paintMonth(parseInt(actionEl.dataset.idx)); break;
 
-        case "toggle-holidays": this._holidaysOpen = !this._holidaysOpen; this._render(); break;
-        case "toggle-hol-tier":
-          e.stopPropagation();
-          this._holTierOpen = !this._holTierOpen;
+          case "select-tier": this._selectTier(actionEl.dataset.id); break;
+          case "add-tier": this._addTier(); break;
+
+          case "fill-all": this._fillRange(0, 6); break;
+          case "fill-weekdays": this._fillRange(0, 4); break;
+          case "fill-weekends": this._fillRange(5, 6); break;
+          case "fill-row": this._fillRow(parseInt(actionEl.dataset.row)); break;
+          case "fill-col": this._fillCol(parseInt(actionEl.dataset.col)); break;
+
+          case "toggle-holidays": this._holidaysOpen = !this._holidaysOpen; this._render(); break;
+          case "toggle-hol-tier":
+            e.stopPropagation();
+            this._holTierOpen = !this._holTierOpen;
+            this._render();
+            break;
+          case "set-hol-tier": this._setHolidayTier(actionEl.dataset.id); break;
+          case "toggle-shift": this._toggleShift(); break;
+          case "toggle-holiday": this._toggleHoliday(actionEl.dataset.id); break;
+          case "remove-custom-hol": this._removeCustomHoliday(actionEl.dataset.id); break;
+          case "add-custom-start": this._addingCustom = true; this._render(); break;
+          case "cf-type": this._onCustomFormType(actionEl.dataset.type); break;
+          case "cf-save": this._onCustomFormSave(); break;
+          case "cf-cancel": this._addingCustom = false; this._render(); break;
+
+          case "toggle-yaml": this._showYaml = !this._showYaml; this._render(); break;
+          case "copy-yaml": this._copyYaml(); break;
+
+          case "save": this._saveConfig(); break;
+          case "discard": this._discard(); break;
+
+          case "close-modal": this._editingTier = null; this._render(); break;
+          case "save-tier": this._onSaveTier(); break;
+          case "delete-tier": this._onDeleteTier(); break;
+
+          case "edit-sensor": this._editSensor(); break;
+        }
+      });
+
+      // Double-click on tier — edit
+      root.addEventListener("dblclick", (e) => {
+        const tierEl = e.target.closest('[data-action="select-tier"]');
+        if (tierEl) {
+          this._editingTier = tierEl.dataset.id;
           this._render();
-          break;
-        case "set-hol-tier": this._setHolidayTier(actionEl.dataset.id); break;
-        case "toggle-shift": this._toggleShift(); break;
-        case "toggle-holiday": this._toggleHoliday(actionEl.dataset.id); break;
-        case "remove-custom-hol": this._removeCustomHoliday(actionEl.dataset.id); break;
-        case "add-custom-start": this._addingCustom = true; this._render(); break;
-        case "cf-type": this._onCustomFormType(actionEl.dataset.type); break;
-        case "cf-save": this._onCustomFormSave(); break;
-        case "cf-cancel": this._addingCustom = false; this._render(); break;
+        }
+      });
 
-        case "toggle-yaml": this._showYaml = !this._showYaml; this._render(); break;
-        case "copy-yaml": this._copyYaml(); break;
-
-        case "save": this._saveConfig(); break;
-        case "discard": this._discard(); break;
-
-        case "close-modal": this._editingTier = null; this._render(); break;
-        case "save-tier": this._onSaveTier(); break;
-        case "delete-tier": this._onDeleteTier(); break;
-      }
-    });
-
-    // Double-click on tier — edit
-    root.addEventListener("dblclick", (e) => {
-      const tierEl = e.target.closest('[data-action="select-tier"]');
-      if (tierEl) {
-        this._editingTier = tierEl.dataset.id;
-        this._render();
-      }
-    });
-
-    // Grid drag painting
-    const gridBody = root.querySelector("#grid-body");
-    if (gridBody) {
-      gridBody.addEventListener("mousedown", (e) => {
+      // Grid drag painting (delegated from root so it survives re-renders)
+      root.addEventListener("mousedown", (e) => {
         const cell = e.target.closest(".cell");
         if (!cell) return;
         e.preventDefault();
@@ -634,7 +645,7 @@ class SolarseedTOUPanel extends HTMLElement {
         this._paintCell(parseInt(cell.dataset.row), parseInt(cell.dataset.col));
       });
 
-      gridBody.addEventListener("mouseover", (e) => {
+      root.addEventListener("mouseover", (e) => {
         if (!this._dragging) return;
         const cell = e.target.closest(".cell");
         if (!cell) return;
@@ -642,29 +653,55 @@ class SolarseedTOUPanel extends HTMLElement {
       });
     }
 
-    // Sticky tier bar
+    // --- DOM-dependent setup (runs each render) ---
+
+    // Sticky tier bar observer (disconnect old, create new)
+    if (this._observer) this._observer.disconnect();
     const sentinel = root.querySelector("#tier-bar-sentinel");
     const tierBar = root.querySelector("#tier-bar");
     if (sentinel && tierBar) {
-      const obs = new IntersectionObserver(([entry]) => {
+      this._observer = new IntersectionObserver(([entry]) => {
         tierBar.classList.toggle("stuck", !entry.isIntersecting);
       }, { threshold: 0 });
-      obs.observe(sentinel);
+      this._observer.observe(sentinel);
     }
 
-    // Close holiday tier dropdown on outside click
+    // Close holiday tier dropdown on outside click (track handler for cleanup)
+    if (this._holTierCloseHandler) {
+      root.removeEventListener("click", this._holTierCloseHandler);
+      this._holTierCloseHandler = null;
+    }
     if (this._holTierOpen) {
       setTimeout(() => {
-        const handler = (e) => {
+        this._holTierCloseHandler = (e) => {
           if (!e.target.closest(".hol-tier-picker")) {
             this._holTierOpen = false;
             this._render();
-            root.removeEventListener("click", handler);
           }
         };
-        root.addEventListener("click", handler);
+        root.addEventListener("click", this._holTierCloseHandler);
       }, 0);
     }
+  }
+
+  disconnectedCallback() {
+    if (this._mouseUpHandler) {
+      document.removeEventListener("mouseup", this._mouseUpHandler);
+    }
+    if (this._observer) {
+      this._observer.disconnect();
+    }
+    if (this._holTierCloseHandler) {
+      this.shadowRoot.removeEventListener("click", this._holTierCloseHandler);
+    }
+    clearTimeout(this._toastTimeout);
+  }
+
+  // ── Sensor ─────────────────────────────────────────────────
+
+  _editSensor() {
+    // Navigate to integration config page
+    window.location.href = "/config/integrations/integration/solarseed_tou";
   }
 
   // ── Grid operations ────────────────────────────────────────
