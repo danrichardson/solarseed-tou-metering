@@ -1,0 +1,11 @@
+{
+  "domain": "solarseed_tou",
+  "name": "Solarseed TOU Energy Metering",
+  "version": "0.1.0",
+  "codeowners": ["@throughline-tech"],
+  "config_flow": true,
+  "documentation": "https://johnnysolarseed.com/tou",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/throughline-tech/solarseed-tou/issues",
+  "requirements": []
+}
