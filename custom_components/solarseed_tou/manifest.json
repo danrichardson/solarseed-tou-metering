@@ -1,7 +1,7 @@
 {
   "domain": "solarseed_tou",
   "name": "Solarseed TOU Energy Metering",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "codeowners": ["@danrichardson"],
   "config_flow": true,
   "documentation": "https://github.com/danrichardson/solarseed-tou-metering",
