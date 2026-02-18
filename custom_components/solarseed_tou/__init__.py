@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
@@ -72,15 +73,18 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def _async_register_panel(hass: HomeAssistant) -> None:
     """Register the custom frontend panel."""
+    frontend_path = str(Path(__file__).parent / "frontend")
+    _LOGGER.debug("Registering panel, frontend path: %s", frontend_path)
+
     try:
         hass.http.register_static_path(
             "/solarseed-tou/frontend",
-            hass.config.path("custom_components/solarseed_tou/frontend"),
+            frontend_path,
             cache_headers=False,
         )
-    except Exception:
-        # Path may already be registered
-        pass
+        _LOGGER.debug("Static path registered OK")
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("Static path already registered or error: %s", err)
 
     try:
         hass.components.frontend.async_register_built_in_panel(
@@ -96,9 +100,9 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
             },
             require_admin=True,
         )
-    except Exception:
-        # Panel may already be registered
-        pass
+        _LOGGER.info("TOU Metering panel registered successfully")
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.warning("Failed to register TOU panel: %s", err)
 
 
 @callback
