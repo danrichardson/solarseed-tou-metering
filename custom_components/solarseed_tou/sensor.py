@@ -145,7 +145,7 @@ class TOUCostAccumulatorSensor(TOUBaseSensor, RestoreEntity):
 
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_native_unit_of_measurement = "$"
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_state_class = SensorStateClass.TOTAL
     _attr_suggested_display_precision = 2
 
     def __init__(
