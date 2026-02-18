@@ -117,7 +117,7 @@ function stateToConfig(state) {
 // --- YAML Generation -----------------------------------------
 
 function generateYaml(state) {
-  let y = `# Solarseed TOU Energy Metering\n# https://github.com/throughline-tech/solarseed-tou\n\ntou_metering:\n`;
+  let y = `# Solarseed TOU Energy Metering\n# https://github.com/danrichardson/solarseed-tou-metering\n\ntou_metering:\n`;
   y += `  energy_sensor: "${state.energy_sensor}"\n\n  tiers:\n`;
   state.tiers.forEach(t => {
     y += `    ${t.id}:\n      name: "${t.name}"\n      rate: ${t.rate}  # effective $/kWh\n      color: "${t.color}"\n`;
@@ -482,7 +482,9 @@ class SolarseedTOUPanel extends HTMLElement {
         <div class="footer">
           <a href="https://johnnysolarseed.com" target="_blank" rel="noopener">\u2600 Johnny Solarseed</a>
           \u00B7
-          <a href="https://github.com/throughline-tech/solarseed-tou" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/danrichardson/solarseed-tou-metering" target="_blank" rel="noopener">GitHub</a>
+          \u00B7
+          <span>v0.3.0</span>
         </div>
       </div>
 

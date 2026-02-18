@@ -34,7 +34,12 @@ export const PANEL_CSS = `
   .header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
   .header h1 .brand { color: #f59e0b; }
   .header p { font-size: 11px; color: #4a6080; margin-top: 0; }
-  .header a { font-size: 11px; color: #3b82f6; text-decoration: none; }
+  .header a {
+    font-size: 12px; color: #3b82f6; text-decoration: none;
+    padding: 6px 12px; border: 1px solid #3b82f644; border-radius: 6px;
+    transition: all .12s;
+  }
+  .header a:hover { background: #3b82f611; border-color: #3b82f6; }
 
   .content { padding: 14px 20px 0; display: flex; flex-direction: column; gap: 12px; }
   .content-bottom { padding: 0 20px 20px; display: flex; flex-direction: column; gap: 12px; }
@@ -155,7 +160,8 @@ export const PANEL_CSS = `
   }
   .hour-label:hover { color: #fff; }
   .grid-stats {
-    display: flex; gap: 10px; margin-top: 6px; align-items: center; flex-wrap: wrap;
+    display: flex; gap: 10px; margin-top: 6px; padding: 0 2px;
+    align-items: center; flex-wrap: wrap;
   }
   .stat { display: flex; align-items: center; gap: 4px; font-size: 11px; }
   .stat-dot { width: 8px; height: 8px; border-radius: 2px; }
