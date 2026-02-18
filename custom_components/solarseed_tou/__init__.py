@@ -8,6 +8,7 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components import frontend, websocket_api
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -77,10 +78,12 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
     _LOGGER.debug("Registering panel, frontend path: %s", frontend_path)
 
     try:
-        hass.http.register_static_path(
-            "/solarseed-tou/frontend",
-            frontend_path,
-            cache_headers=False,
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(
+                url_path="/solarseed-tou/frontend",
+                path=frontend_path,
+                cache_headers=False,
+            )]
         )
         _LOGGER.debug("Static path registered OK")
     except Exception as err:  # noqa: BLE001
