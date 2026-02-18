@@ -217,7 +217,7 @@ export default function SolarseedTOU() {
             <p style={{ fontSize: 11, color: "#4a6080", marginTop: 0 }}>Time-of-use cost tracking for Home Assistant</p>
           </div>
         </div>
-        <a href="https://johnnysolarseed.com/tou-calculator" target="_blank" rel="noopener"
+        <a href="https://johnnysolarseed.org/tou-calculator" target="_blank" rel="noopener"
           style={{ fontSize: 11, color: "#3b82f6", textDecoration: "none" }}>Rate calculator ↗</a>
       </div>
 
@@ -372,7 +372,7 @@ export default function SolarseedTOU() {
             {addingCustom ? <CustomHolidayForm onSave={addCustomHoliday} onCancel={() => setAddingCustom(false)} /> :
               <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
                 <button className="btn btn-s" onClick={() => setAddingCustom(true)}>+ Custom Holiday</button>
-                <a href="https://johnnysolarseed.com/holidays" target="_blank" rel="noopener" style={{ fontSize: 11, color: "#3b82f6", textDecoration: "none" }}>Browse more ↗</a>
+                <a href="https://johnnysolarseed.org/holidays" target="_blank" rel="noopener" style={{ fontSize: 11, color: "#3b82f6", textDecoration: "none" }}>Browse more ↗</a>
               </div>}
           </div>}
         </div>
@@ -391,7 +391,7 @@ export default function SolarseedTOU() {
 
         {/* Footer */}
         <div style={{ textAlign: "center", padding: "8px 0 16px", fontSize: 10, color: "#2a3a4e" }}>
-          <a href="https://johnnysolarseed.com" target="_blank" rel="noopener" style={{ color: "#3a5068", textDecoration: "none" }}>☀ Johnny Solarseed</a>
+          <a href="https://johnnysolarseed.org" target="_blank" rel="noopener" style={{ color: "#3a5068", textDecoration: "none" }}>☀ Johnny Solarseed</a>
           {" · "}
           <a href="https://github.com/throughline-tech/solarseed-tou" target="_blank" rel="noopener" style={{ color: "#3a5068", textDecoration: "none" }}>GitHub</a>
         </div>

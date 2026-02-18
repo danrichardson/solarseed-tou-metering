@@ -18,7 +18,7 @@
     "step": {
       "init": {
         "title": "TOU Metering Configuration",
-        "description": "Change the energy sensor or paste YAML to import rate schedules.\n\nExport YAML from the [TOU Rate Calculator](https://johnnysolarseed.com/tou-calculator) or the [TOU Metering panel]({panel_url}).\n\nLeave YAML empty to save sensor change only.",
+        "description": "Change the energy sensor or paste YAML to import rate schedules.\n\nExport YAML from the [TOU Rate Calculator](https://johnnysolarseed.org/tou-calculator) or the [TOU Metering panel]({panel_url}).\n\nLeave YAML empty to save sensor change only.",
         "data": {
           "energy_sensor": "Energy or power sensor",
           "yaml_config": "YAML configuration (optional)"

@@ -10,7 +10,7 @@ A Home Assistant custom integration (HACS-installable) that tracks energy costs 
 ## Philosophy
 
 - The plugin stores **effective $/kWh rates** — the all-in cost after fees and taxes
-- Bill structure decomposition (transmission charges, regulatory fees, taxes) lives on JohnnySolarseed.com as a separate web calculator
+- Bill structure decomposition (transmission charges, regulatory fees, taxes) lives on johnnysolarseed.org as a separate web calculator
 - The user does the math once, enters the resulting numbers here
 - The plugin does one thing well: multiply energy consumption by the right rate at the right time
 
@@ -310,7 +310,7 @@ async def ws_set_config(hass, connection, msg):
   "version": "0.1.0",
   "codeowners": ["@throughline-tech"],
   "config_flow": true,
-  "documentation": "https://johnnysolarseed.com/tou",
+  "documentation": "https://johnnysolarseed.org/tou",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/throughline-tech/solarseed-tou/issues",
   "requirements": []

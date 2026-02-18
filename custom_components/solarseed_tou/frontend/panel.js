@@ -275,7 +275,7 @@ class SolarseedTOUPanel extends HTMLElement {
             <p>Time-of-use cost tracking for Home Assistant</p>
           </div>
         </div>
-        <a href="https://johnnysolarseed.com/tou-calculator" target="_blank" rel="noopener">Rate calculator \u2197</a>
+        <a href="https://johnnysolarseed.org/tou-calculator" target="_blank" rel="noopener">Rate calculator \u2197</a>
       </div>
 
       <div class="content">
@@ -480,7 +480,7 @@ class SolarseedTOUPanel extends HTMLElement {
 
         <!-- FOOTER -->
         <div class="footer">
-          <a href="https://johnnysolarseed.com" target="_blank" rel="noopener">\u2600 Johnny Solarseed</a>
+          <a href="https://johnnysolarseed.org" target="_blank" rel="noopener">\u2600 Johnny Solarseed</a>
           \u00B7
           <a href="https://github.com/danrichardson/solarseed-tou-metering" target="_blank" rel="noopener">GitHub</a>
           \u00B7

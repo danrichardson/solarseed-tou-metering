@@ -5,7 +5,7 @@
 - Home Assistant **2024.1.0** or newer
 - An energy sensor entity (kWh) already configured (e.g., from an Emporia Vue, Sense, or utility meter helper)
 - SSH or Samba access to your HA instance
-- Your Portland General Electric (PGE) or Pacific Power rate schedule — use [johnnysolarseed.com/tou-calculator](https://johnnysolarseed.com/tou-calculator) to compute effective $/kWh rates
+- Your Portland General Electric (PGE) or Pacific Power rate schedule — use [johnnysolarseed.org/tou-calculator](https://johnnysolarseed.org/tou-calculator) to compute effective $/kWh rates
 
 ## Option A: Manual Install (recommended for testing)
 
@@ -106,7 +106,7 @@ tou_metering:
       - "christmas"
 ```
 
-> **Note:** The rates above are examples. Run your actual PGE bill through the [rate calculator](https://johnnysolarseed.com/tou-calculator) to get your effective all-in $/kWh. PGE on-peak is typically 3–8 PM weekdays.
+> **Note:** The rates above are examples. Run your actual PGE bill through the [rate calculator](https://johnnysolarseed.org/tou-calculator) to get your effective all-in $/kWh. PGE on-peak is typically 3–8 PM weekdays.
 
 3. Click **Submit** — the integration validates the YAML, saves it, and immediately starts using the new schedule.
 

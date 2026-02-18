@@ -58,7 +58,7 @@ class SolarseedTOUConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             }),
             errors=errors,
             description_placeholders={
-                "docs_url": "https://johnnysolarseed.com/tou",
+                "docs_url": "https://johnnysolarseed.org/tou",
             },
         )
 

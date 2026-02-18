@@ -36,7 +36,7 @@ Copy `custom_components/solarseed_tou` to your `config/custom_components/` direc
 
 Enter your **effective (all-in) cost per kWh** — the number that includes all fees, taxes, and surcharges baked in. Not just the published energy rate.
 
-Use the [Rate Calculator](https://johnnysolarseed.com/tou-calculator) to figure out your effective rate from your actual utility bill.
+Use the [Rate Calculator](https://johnnysolarseed.org/tou-calculator) to figure out your effective rate from your actual utility bill.
 
 ### Example: PGE Oregon
 
@@ -69,9 +69,9 @@ action:
 
 ## Links
 
-- [Rate Calculator](https://johnnysolarseed.com/tou-calculator) — figure out your effective $/kWh
-- [Holiday Lists](https://johnnysolarseed.com/holidays) — find your utility's holidays
-- [Johnny Solarseed](https://johnnysolarseed.com) — DIY solar education
+- [Rate Calculator](https://johnnysolarseed.org/tou-calculator) — figure out your effective $/kWh
+- [Holiday Lists](https://johnnysolarseed.org/holidays) — find your utility's holidays
+- [Johnny Solarseed](https://johnnysolarseed.org) — DIY solar education
 - [Issues](https://github.com/throughline-tech/solarseed-tou/issues)
 
 ## License
