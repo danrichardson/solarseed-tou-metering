@@ -107,7 +107,7 @@ export const PANEL_CSS = `
     border-radius: 4px; transition: all .12s; font-size: 12px; font-weight: 500;
     border: 2px solid transparent;
   }
-  .month:hover { filter: brightness(1.2); }
+  .month:hover { filter: brightness(1.2); transform: scale(1.05); z-index: 1; box-shadow: 0 0 8px rgba(255,255,255,.1); }
 
   /* Tier toolbar */
   .tier-bar {
@@ -176,10 +176,11 @@ export const PANEL_CSS = `
   .hol-name { font-size: 12px; flex: 1; }
   .hol-when { font-size: 10px; color: #3a5068; }
   .hol-tier-picker {
-    display: flex; align-items: center; gap: 6px; padding: 4px 10px;
-    border-radius: 6px; border: 1px solid #253446; background: #0e1620;
-    cursor: pointer; position: relative;
+    display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+    border-radius: 6px; border: 1px solid #3b82f644; background: #0e1620;
+    cursor: pointer; position: relative; transition: all .12s;
   }
+  .hol-tier-picker:hover { border-color: #3b82f6; background: #131c28; }
   .hol-tier-dropdown {
     position: absolute; top: calc(100% + 4px); right: 0;
     background: #1a2838; border: 1px solid #253446; border-radius: 8px;
