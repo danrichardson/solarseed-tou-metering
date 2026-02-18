@@ -13,7 +13,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from .const import DOMAIN, CONF_ENERGY_SENSOR
+from .const import DOMAIN, CONF_ENERGY_SENSOR, VERSION
 from .schedule import TOUSchedule
 from .storage import TOUStorage
 
@@ -99,7 +99,7 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
             config={
                 "_panel_custom": {
                     "name": "solarseed-tou-panel",
-                    "module_url": "/solarseed-tou/frontend/panel.js",
+                    "module_url": f"/solarseed-tou/frontend/panel.js?v={VERSION}",
                 }
             },
             require_admin=True,
