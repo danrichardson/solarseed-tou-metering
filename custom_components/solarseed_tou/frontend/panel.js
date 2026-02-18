@@ -361,7 +361,7 @@ class SolarseedTOUPanel extends HTMLElement {
           </div>
           <div class="grid-body" id="grid-body">
             <div class="hour-labels">
-              ${HOURS.map(h => `<div class="hour-label" data-action="fill-col" data-col="${h}">${h % 3 === 0 ? String(h).padStart(2, "0") : ""}</div>`).join("")}
+              ${HOURS.map(h => `<div class="hour-label" data-action="fill-col" data-col="${h}">${String(h).padStart(2, "0")}</div>`).join("")}
             </div>
             ${DAYS.map((d, di) => `
               <div class="grid-row">

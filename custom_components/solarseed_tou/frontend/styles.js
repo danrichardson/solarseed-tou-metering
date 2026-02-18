@@ -144,14 +144,14 @@ export const PANEL_CSS = `
   .day-label.weekend { color: #3b82f6; }
   .grid-cells { display: flex; flex: 1; gap: 1px; }
   .cell {
-    flex: 1; height: 28px; border-radius: 2px;
+    flex: 1; height: 38px; border-radius: 2px;
     transition: background .05s; cursor: pointer;
   }
   .cell:hover { filter: brightness(1.3); transform: scale(1.06); z-index: 2; }
   .hour-labels { display: flex; margin-left: 40px; margin-bottom: 2px; }
   .hour-label {
-    flex: 1; text-align: center; font-size: 9px; color: #3a5068;
-    font-weight: 500; cursor: pointer; transition: color .1s;
+    flex: 1; text-align: center; font-size: 10px; color: #6a829e;
+    font-weight: 600; cursor: pointer; transition: color .1s;
   }
   .hour-label:hover { color: #fff; }
   .grid-stats {
