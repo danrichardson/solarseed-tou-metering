@@ -16,7 +16,7 @@ Home Assistant tracks your energy **consumption** — this integration tracks yo
 
 ### HACS (Recommended)
 1. Open HACS → Integrations → Custom Repositories
-2. Add: `https://github.com/throughline-tech/solarseed-tou`
+2. Add: `https://github.com/danrichardson/solarseed-tou-metering`
 3. Install "Solarseed TOU Energy Metering"
 4. Restart Home Assistant
 
