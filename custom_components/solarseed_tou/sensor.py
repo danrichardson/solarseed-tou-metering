@@ -93,7 +93,7 @@ class TOUBaseSensor(SensorEntity):
             "name": "Solarseed TOU Metering",
             "manufacturer": "Johnny Solarseed",
             "model": "TOU Energy Metering",
-            "sw_version": "0.6.0",
+            "sw_version": "0.6.1",
         }
 
     async def async_added_to_hass(self) -> None:

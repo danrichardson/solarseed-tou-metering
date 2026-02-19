@@ -25,6 +25,10 @@ PLATFORMS = ["sensor"]
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the Solarseed TOU component."""
     hass.data.setdefault(DOMAIN, {})
+
+    # Register the Lovelace card JS early so it's available on all dashboards
+    _register_card_resource(hass)
+
     return True
 
 
@@ -52,9 +56,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "entry": entry,
     }
 
-    # Register custom panel + Lovelace card resource
+    # Register custom panel
     await _async_register_panel(hass)
-    _async_register_card(hass)
 
     # Register WebSocket API
     _async_register_websocket(hass)
@@ -110,27 +113,14 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
         _LOGGER.warning("Failed to register TOU panel: %s", err)
 
 
-def _async_register_card(hass: HomeAssistant) -> None:
-    """Register the Lovelace card as a frontend resource."""
-    card_url = f"/solarseed-tou/frontend/card.js?v={VERSION}"
-
-    # Add to Lovelace resources so the card is auto-loaded on dashboards.
-    # Uses the internal lovelace resource collection if available.
-    try:
-        from homeassistant.components.lovelace.resources import (
-            ResourceStorageCollection,
-        )
-    except ImportError:
-        _LOGGER.debug("Lovelace resource API not available, card must be added manually")
-        return
-
-    # Check if already registered (avoid duplicates across reloads)
+def _register_card_resource(hass: HomeAssistant) -> None:
+    """Register the Lovelace card as an extra JS module."""
+    # Only register once (survives config entry reloads)
     if f"{DOMAIN}_card_registered" in hass.data:
         return
     hass.data[f"{DOMAIN}_card_registered"] = True
 
-    # Use frontend.async_register_built_in_panel won't help here;
-    # instead we add the JS as an extra module URL that HA loads on every dashboard.
+    card_url = f"/solarseed-tou/frontend/card.js?v={VERSION}"
     frontend.add_extra_js_url(hass, card_url)
     _LOGGER.info("Solarseed TOU card registered at %s", card_url)
 
