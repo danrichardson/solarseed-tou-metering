@@ -70,6 +70,7 @@ async def async_setup_entry(
     entities = [
         TOUCurrentRateSensor(entry, schedule),
         TOUCurrentTierSensor(entry, schedule),
+        TOUCostHourlySensor(entry, schedule, energy_sensor),
         TOUCostTodaySensor(entry, schedule, energy_sensor),
         TOUCostWeekSensor(entry, schedule, energy_sensor),
         TOUCostMonthSensor(entry, schedule, energy_sensor),
@@ -92,7 +93,7 @@ class TOUBaseSensor(SensorEntity):
             "name": "Solarseed TOU Metering",
             "manufacturer": "Johnny Solarseed",
             "model": "TOU Energy Metering",
-            "sw_version": "0.4.0",
+            "sw_version": "0.5.0",
         }
 
     async def async_added_to_hass(self) -> None:
@@ -149,7 +150,11 @@ class TOUCurrentRateSensor(TOUBaseSensor):
 
 
 class TOUCurrentTierSensor(TOUBaseSensor):
-    """Sensor showing the current tier name (for automations)."""
+    """Sensor showing the current tier name (for automations).
+
+    Fires a `solarseed_tou_tier_changed` event whenever the active tier changes,
+    enabling HA automations to trigger on rate transitions.
+    """
 
     _attr_name = "Current Tier"
     _attr_icon = "mdi:tag-outline"
@@ -158,9 +163,10 @@ class TOUCurrentTierSensor(TOUBaseSensor):
         """Initialize."""
         super().__init__(entry, schedule)
         self._attr_unique_id = f"{entry.entry_id}_current_tier"
+        self._previous_tier_id: str | None = None
 
     def update(self) -> None:
-        """Update current tier."""
+        """Update current tier and fire event on change."""
         now = dt_util.now()
         tier = self._schedule.get_tier(now)
         self._attr_native_value = tier.name if tier else "Unknown"
@@ -170,6 +176,106 @@ class TOUCurrentTierSensor(TOUBaseSensor):
                 "rate": tier.rate,
                 "color": tier.color,
             }
+
+            # Fire event when tier changes
+            if self._previous_tier_id is not None and tier.id != self._previous_tier_id:
+                prev_tier = self._schedule.tiers.get(self._previous_tier_id)
+                self.hass.bus.async_fire(
+                    f"{DOMAIN}_tier_changed",
+                    {
+                        "previous_tier": self._previous_tier_id,
+                        "previous_tier_name": prev_tier.name if prev_tier else self._previous_tier_id,
+                        "previous_rate": prev_tier.rate if prev_tier else None,
+                        "new_tier": tier.id,
+                        "new_tier_name": tier.name,
+                        "new_rate": tier.rate,
+                        "is_holiday": self._schedule.is_holiday(now.date()),
+                    },
+                )
+                _LOGGER.info(
+                    "Solarseed TOU: tier changed %s → %s (rate: $%.4f → $%.4f)",
+                    self._previous_tier_id,
+                    tier.id,
+                    prev_tier.rate if prev_tier else 0,
+                    tier.rate,
+                )
+            self._previous_tier_id = tier.id
+
+
+class TOUCostHourlySensor(TOUBaseSensor):
+    """Instantaneous cost rate — what the current power usage costs per hour.
+
+    Reads the source power/energy sensor and computes: power_kW × rate = $/hr.
+    For energy sensors, estimates power from the last two readings.
+    """
+
+    _attr_name = "Cost Per Hour"
+    _attr_icon = "mdi:clock-fast"
+    _attr_native_unit_of_measurement = "$/hr"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 3
+
+    def __init__(
+        self,
+        entry: ConfigEntry,
+        schedule: TOUSchedule,
+        energy_sensor: str,
+    ) -> None:
+        """Initialize."""
+        super().__init__(entry, schedule)
+        self._energy_sensor = energy_sensor
+        self._attr_unique_id = f"{entry.entry_id}_cost_hourly"
+        self._last_reading: float | None = None
+        self._last_reading_time: datetime | None = None
+
+    async def async_added_to_hass(self) -> None:
+        """Track the source sensor."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            async_track_state_change_event(
+                self.hass, [self._energy_sensor], self._handle_source_change
+            )
+        )
+
+    @callback
+    def _handle_source_change(self, event: Event) -> None:
+        """Recalculate hourly cost when source sensor updates."""
+        new_state: State | None = event.data.get("new_state")
+        if new_state is None or new_state.state in ("unknown", "unavailable"):
+            return
+
+        try:
+            raw_value = float(new_state.state)
+        except (ValueError, TypeError):
+            return
+
+        now = dt_util.now()
+        mode, mult = _detect_sensor_mode(self.hass, self._energy_sensor)
+        rate = self._schedule.get_rate(now)
+
+        if mode == "power":
+            # Direct: power_kW × rate = $/hr
+            power_kw = raw_value * mult
+            self._attr_native_value = round(power_kw * rate, 4)
+        else:
+            # Energy: estimate power from consecutive readings
+            if self._last_reading is not None and self._last_reading_time is not None:
+                dt_hours = (now - self._last_reading_time).total_seconds() / 3600.0
+                if 0 < dt_hours <= 1.0:
+                    delta_kwh = (raw_value - self._last_reading) * mult
+                    if delta_kwh >= 0:
+                        power_kw = delta_kwh / dt_hours
+                        self._attr_native_value = round(power_kw * rate, 4)
+            self._last_reading = raw_value
+            self._last_reading_time = now
+
+        tier = self._schedule.get_tier(now)
+        self._attr_extra_state_attributes = {
+            "rate": rate,
+            "tier": tier.name if tier else "Unknown",
+            "sensor_mode": mode,
+        }
+        self.async_write_ha_state()
 
 
 class TOUCostAccumulatorSensor(TOUBaseSensor, RestoreEntity):

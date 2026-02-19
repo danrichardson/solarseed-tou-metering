@@ -1,7 +1,7 @@
 """Constants for Solarseed TOU Energy Metering."""
 
 DOMAIN = "solarseed_tou"
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 CONF_ENERGY_SENSOR = "energy_sensor"
 
 # Storage
