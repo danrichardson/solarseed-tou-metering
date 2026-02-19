@@ -52,8 +52,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "entry": entry,
     }
 
-    # Register custom panel
+    # Register custom panel + Lovelace card resource
     await _async_register_panel(hass)
+    _async_register_card(hass)
 
     # Register WebSocket API
     _async_register_websocket(hass)
@@ -107,6 +108,31 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
         _LOGGER.info("TOU Metering panel registered successfully")
     except Exception as err:  # noqa: BLE001
         _LOGGER.warning("Failed to register TOU panel: %s", err)
+
+
+def _async_register_card(hass: HomeAssistant) -> None:
+    """Register the Lovelace card as a frontend resource."""
+    card_url = f"/solarseed-tou/frontend/card.js?v={VERSION}"
+
+    # Add to Lovelace resources so the card is auto-loaded on dashboards.
+    # Uses the internal lovelace resource collection if available.
+    try:
+        from homeassistant.components.lovelace.resources import (
+            ResourceStorageCollection,
+        )
+    except ImportError:
+        _LOGGER.debug("Lovelace resource API not available, card must be added manually")
+        return
+
+    # Check if already registered (avoid duplicates across reloads)
+    if f"{DOMAIN}_card_registered" in hass.data:
+        return
+    hass.data[f"{DOMAIN}_card_registered"] = True
+
+    # Use frontend.async_register_built_in_panel won't help here;
+    # instead we add the JS as an extra module URL that HA loads on every dashboard.
+    frontend.add_extra_js_url(hass, card_url)
+    _LOGGER.info("Solarseed TOU card registered at %s", card_url)
 
 
 @callback

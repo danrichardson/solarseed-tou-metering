@@ -484,7 +484,7 @@ class SolarseedTOUPanel extends HTMLElement {
           \u00B7
           <a href="https://github.com/danrichardson/solarseed-tou-metering" target="_blank" rel="noopener">GitHub</a>
           \u00B7
-          <span>v0.5.0</span>
+          <span>v0.6.0</span>
         </div>
       </div>
 
