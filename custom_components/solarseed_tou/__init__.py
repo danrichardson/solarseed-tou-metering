@@ -56,8 +56,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "entry": entry,
     }
 
-    # Register custom panel
-    await _async_register_panel(hass)
+    # Panel registration disabled — configuration is now handled by
+    # the Rate Formula Tool on the website (johnnysolarseed.org/tou-calculator).
+    # The sidebar panel (panel.js) is kept for now but not loaded.
+    # await _async_register_panel(hass)
 
     # Register WebSocket API
     _async_register_websocket(hass)

@@ -28,19 +28,26 @@ Copy `custom_components/solarseed_tou` to your `config/custom_components/` direc
 1. Go to **Settings → Integrations → Add Integration**
 2. Search for "Solarseed TOU"
 3. Select your energy sensor (must be a kWh sensor)
-4. Configure your rate schedule in the **TOU Metering** panel (appears in sidebar)
+4. Configure your rate schedule using the [Rate Formula Tool](https://johnnysolarseed.org/tou-calculator) on the website
+5. Copy the generated YAML and paste it into the integration's Options flow
 
 ## Rate Configuration
+
+### Using the Rate Formula Tool
+
+The [Rate Formula Tool](https://johnnysolarseed.org/tou-calculator) walks you through a 5-step process:
+
+1. **Rates** — Select a preset or scan your bill to auto-detect rate components
+2. **Review** — See your all-in effective rates with a full breakdown
+3. **Schedule** — Paint your TOU schedule on a 7×24 grid
+4. **Validate** — Compare the formula against your actual bill
+5. **Export** — Copy the YAML configuration for this plugin
 
 ### What Rate Do I Enter?
 
 Enter your **effective (all-in) cost per kWh** — the number that includes all fees, taxes, and surcharges baked in. Not just the published energy rate.
 
-Use the [Rate Calculator](https://johnnysolarseed.org/tou-calculator) to figure out your effective rate from your actual utility bill.
-
-### Example: PGE Oregon
-
-Your bill shows 790 kWh at $169.50. That's an effective rate of $0.2145/kWh — much higher than the published $0.0354/kWh energy charge, because it includes transmission ($0.00862), distribution ($0.07014), fixed fees ($28.80/month), and taxes (3%).
+The Rate Formula Tool calculates this automatically from your bill's component charges.
 
 ## Sensors Created
 
