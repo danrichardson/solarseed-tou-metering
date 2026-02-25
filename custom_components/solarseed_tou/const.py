@@ -1,17 +1,18 @@
 """Constants for Solarseed TOU Energy Metering."""
 
 DOMAIN = "solarseed_tou"
-VERSION = "0.6.1"
+VERSION = "0.7.0"
 CONF_ENERGY_SENSOR = "energy_sensor"
 
 # Storage
 STORAGE_KEY = f"{DOMAIN}_config"
-STORAGE_VERSION = 1
+STORAGE_VERSION = 2  # v2: added formula fields (regulatory, passthrough, programs, tax, fixed)
 
-# Defaults
+# Defaults — PGE Schedule 7 example values (Oregon Residential TOU)
 DEFAULT_TIERS = {
-    "off-peak": {"name": "Off-Peak", "rate": 0.10, "color": "#22c55e"},
-    "on-peak": {"name": "On-Peak", "rate": 0.18, "color": "#ef4444"},
+    "off-peak": {"name": "Off-Peak", "rate": 0.08339, "color": "#22c55e"},
+    "mid-peak": {"name": "Mid-Peak", "rate": 0.09664, "color": "#f59e0b"},
+    "on-peak":  {"name": "On-Peak",  "rate": 0.15728, "color": "#ef4444"},
 }
 
 DEFAULT_SEASON = {
@@ -21,6 +22,13 @@ DEFAULT_SEASON = {
         day: ["off-peak"] * 24 for day in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
     },
 }
+
+# Shared per-kWh formula defaults (zeros — user fills from their bill)
+DEFAULT_REGULATORY_PER_KWH = 0.0
+DEFAULT_STATE_PASSTHROUGH_PER_KWH = 0.0
+DEFAULT_PROGRAMS_PER_KWH = 0.0
+DEFAULT_TAX_RATE_PCT = 0.0
+DEFAULT_FIXED_MONTHLY = 0.0
 
 # Standard US holidays (pattern-based, resolved at runtime)
 STANDARD_HOLIDAYS = {

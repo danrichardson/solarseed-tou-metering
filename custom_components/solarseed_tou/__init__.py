@@ -1,19 +1,23 @@
-"""Solarseed TOU Energy Metering integration for Home Assistant."""
+"""Solarseed TOU Energy Metering integration for Home Assistant.
+
+Rate configuration is managed via YAML exported from the Johnny Solarseed
+Rate Calculator (johnnysolarseed.org/tou-calculator) and pasted into the
+integration's Options flow.  No frontend panel is shipped — the website
+handles all rate decomposition and schedule painting.
+"""
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.components import frontend, websocket_api
-from homeassistant.components.http import StaticPathConfig
+from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from .const import DOMAIN, CONF_ENERGY_SENSOR, VERSION
+from .const import DOMAIN, CONF_ENERGY_SENSOR
 from .schedule import TOUSchedule
 from .storage import TOUStorage
 
@@ -25,10 +29,6 @@ PLATFORMS = ["sensor"]
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the Solarseed TOU component."""
     hass.data.setdefault(DOMAIN, {})
-
-    # Register the Lovelace card JS early so it's available on all dashboards
-    _register_card_resource(hass)
-
     return True
 
 
@@ -56,12 +56,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "entry": entry,
     }
 
-    # Panel registration disabled — configuration is now handled by
-    # the Rate Formula Tool on the website (johnnysolarseed.org/tou-calculator).
-    # The sidebar panel (panel.js) is kept for now but not loaded.
-    # await _async_register_panel(hass)
-
-    # Register WebSocket API
+    # Register WebSocket API (useful for debugging / external tooling)
     _async_register_websocket(hass)
 
     # Set up sensor platform
@@ -78,58 +73,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
-async def _async_register_panel(hass: HomeAssistant) -> None:
-    """Register the custom frontend panel."""
-    frontend_path = str(Path(__file__).parent / "frontend")
-    _LOGGER.debug("Registering panel, frontend path: %s", frontend_path)
-
-    try:
-        await hass.http.async_register_static_paths(
-            [StaticPathConfig(
-                url_path="/solarseed-tou/frontend",
-                path=frontend_path,
-                cache_headers=False,
-            )]
-        )
-        _LOGGER.debug("Static path registered OK")
-    except Exception as err:  # noqa: BLE001
-        _LOGGER.debug("Static path already registered or error: %s", err)
-
-    try:
-        frontend.async_register_built_in_panel(
-            hass,
-            "custom",
-            sidebar_title="TOU Metering",
-            sidebar_icon="mdi:lightning-bolt",
-            frontend_url_path="solarseed-tou",
-            config={
-                "_panel_custom": {
-                    "name": "solarseed-tou-panel",
-                    "module_url": f"/solarseed-tou/frontend/panel.js?v={VERSION}",
-                }
-            },
-            require_admin=True,
-        )
-        _LOGGER.info("TOU Metering panel registered successfully")
-    except Exception as err:  # noqa: BLE001
-        _LOGGER.warning("Failed to register TOU panel: %s", err)
-
-
-def _register_card_resource(hass: HomeAssistant) -> None:
-    """Register the Lovelace card as an extra JS module."""
-    # Only register once (survives config entry reloads)
-    if f"{DOMAIN}_card_registered" in hass.data:
-        return
-    hass.data[f"{DOMAIN}_card_registered"] = True
-
-    card_url = f"/solarseed-tou/frontend/card.js?v={VERSION}"
-    frontend.add_extra_js_url(hass, card_url)
-    _LOGGER.info("Solarseed TOU card registered at %s", card_url)
-
-
 @callback
 def _async_register_websocket(hass: HomeAssistant) -> None:
-    """Register WebSocket commands for config CRUD."""
+    """Register WebSocket commands for config read/write."""
 
     @websocket_api.websocket_command(
         {vol.Required("type"): "solarseed_tou/get_config"}
@@ -139,7 +85,6 @@ def _async_register_websocket(hass: HomeAssistant) -> None:
         hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
     ) -> None:
         """Return current TOU configuration."""
-        # Find the first entry
         entry_data = _get_entry_data(hass)
         if entry_data is None:
             connection.send_error(msg["id"], "not_configured", "No TOU entry found")
@@ -159,7 +104,7 @@ def _async_register_websocket(hass: HomeAssistant) -> None:
     async def ws_set_config(
         hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
     ) -> None:
-        """Update TOU configuration."""
+        """Update TOU configuration (used by external tooling / automations)."""
         entry_data = _get_entry_data(hass)
         if entry_data is None:
             connection.send_error(msg["id"], "not_configured", "No TOU entry found")

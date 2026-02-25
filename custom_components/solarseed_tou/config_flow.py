@@ -9,6 +9,7 @@ import yaml
 
 from homeassistant import config_entries
 from homeassistant.helpers import selector
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import DOMAIN, CONF_ENERGY_SENSOR
 from .schedule import TOUSchedule
@@ -135,6 +136,13 @@ class SolarseedTOUOptionsFlow(config_entries.OptionsFlow):
                                     await storage.async_save(parsed)
                                     entry_data["schedule"] = schedule
 
+                                    # Notify sensors to pick up new schedule
+                                    async_dispatcher_send(
+                                        self.hass,
+                                        f"{DOMAIN}_config_updated",
+                                        schedule,
+                                    )
+
                             except Exception:  # noqa: BLE001
                                 errors["yaml_config"] = "invalid_config"
 
@@ -159,6 +167,6 @@ class SolarseedTOUOptionsFlow(config_entries.OptionsFlow):
             ),
             errors=errors,
             description_placeholders={
-                "panel_url": "/solarseed-tou",
+                "calculator_url": "https://johnnysolarseed.org/tou-calculator",
             },
         )

@@ -7,7 +7,18 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
-from .const import DOMAIN, STORAGE_KEY, STORAGE_VERSION, DEFAULT_TIERS, DEFAULT_SEASON
+from .const import (
+    DOMAIN,
+    STORAGE_KEY,
+    STORAGE_VERSION,
+    DEFAULT_TIERS,
+    DEFAULT_SEASON,
+    DEFAULT_REGULATORY_PER_KWH,
+    DEFAULT_STATE_PASSTHROUGH_PER_KWH,
+    DEFAULT_PROGRAMS_PER_KWH,
+    DEFAULT_TAX_RATE_PCT,
+    DEFAULT_FIXED_MONTHLY,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,6 +28,11 @@ def _default_config(energy_sensor: str) -> dict[str, Any]:
     return {
         "energy_sensor": energy_sensor,
         "tiers": DEFAULT_TIERS,
+        "regulatory_per_kwh": DEFAULT_REGULATORY_PER_KWH,
+        "state_passthrough_per_kwh": DEFAULT_STATE_PASSTHROUGH_PER_KWH,
+        "programs_per_kwh": DEFAULT_PROGRAMS_PER_KWH,
+        "tax_rate_pct": DEFAULT_TAX_RATE_PCT,
+        "fixed_monthly": DEFAULT_FIXED_MONTHLY,
         "seasons": {
             "all_year": DEFAULT_SEASON,
         },
@@ -29,7 +45,30 @@ def _default_config(energy_sensor: str) -> dict[str, Any]:
             ],
             "custom": [],
         },
+        "_schema_version": STORAGE_VERSION,
     }
+
+
+def _migrate_v1_to_v2(config: dict[str, Any]) -> dict[str, Any]:
+    """Migrate v1 config to v2 — add formula fields with safe defaults.
+
+    Existing v1 configs stored a single ``rate`` per tier that may have been
+    an *effective* rate (all-in after taxes/fees) or a bare rate — we can't
+    know.  By defaulting all adders to 0 the v1 ``rate`` values will be used
+    as-is, which is the safest behaviour until the user re-exports from the
+    calculator.
+    """
+    config.setdefault("regulatory_per_kwh", 0.0)
+    config.setdefault("state_passthrough_per_kwh", 0.0)
+    config.setdefault("programs_per_kwh", 0.0)
+    config.setdefault("tax_rate_pct", 0.0)
+    config.setdefault("fixed_monthly", 0.0)
+    config["_schema_version"] = 2
+    _LOGGER.info(
+        "Solarseed TOU: migrated storage v1 → v2 (added formula fields, "
+        "adders default to 0)"
+    )
+    return config
 
 
 class TOUStorage:
@@ -41,15 +80,22 @@ class TOUStorage:
         self._data: dict[str, Any] | None = None
 
     async def async_load(self) -> dict[str, Any]:
-        """Load configuration from storage."""
+        """Load configuration from storage, running migrations if needed."""
         self._data = await self._store.async_load()
         if self._data is None:
             _LOGGER.debug("No stored TOU config found, using defaults")
             self._data = _default_config("")
+        else:
+            # Run migrations
+            schema = self._data.get("_schema_version", 1)
+            if schema < 2:
+                self._data = _migrate_v1_to_v2(self._data)
+                await self._store.async_save(self._data)
         return self._data
 
     async def async_save(self, data: dict[str, Any]) -> None:
         """Save configuration to storage."""
+        data.setdefault("_schema_version", STORAGE_VERSION)
         self._data = data
         await self._store.async_save(data)
 

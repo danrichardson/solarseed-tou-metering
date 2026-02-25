@@ -1,3 +1,7 @@
+// ⚠️ ARCHIVED — v0.7.0
+// This is the React prototype for the Solarseed website rate calculator.
+// It is NOT part of the Home Assistant plugin. Kept for historical reference.
+// See YAML-CONTRACT.md for the authoritative data model.
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);

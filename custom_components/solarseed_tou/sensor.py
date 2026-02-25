@@ -19,7 +19,7 @@ from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, CONF_ENERGY_SENSOR
+from .const import DOMAIN, CONF_ENERGY_SENSOR, VERSION
 
 # Unit → multiplier to get kW (for power sensors) or kWh (for energy sensors)
 _POWER_UNITS = {
@@ -70,6 +70,7 @@ async def async_setup_entry(
     entities = [
         TOUCurrentRateSensor(entry, schedule),
         TOUCurrentTierSensor(entry, schedule),
+        TOUFixedMonthlySensor(entry, schedule),
         TOUCostHourlySensor(entry, schedule, energy_sensor),
         TOUCostTodaySensor(entry, schedule, energy_sensor),
         TOUCostWeekSensor(entry, schedule, energy_sensor),
@@ -93,7 +94,7 @@ class TOUBaseSensor(SensorEntity):
             "name": "Solarseed TOU Metering",
             "manufacturer": "Johnny Solarseed",
             "model": "TOU Energy Metering",
-            "sw_version": "0.6.1",
+            "sw_version": VERSION,
         }
 
     async def async_added_to_hass(self) -> None:
@@ -108,7 +109,7 @@ class TOUBaseSensor(SensorEntity):
 
     @callback
     def _handle_config_update(self, schedule: TOUSchedule) -> None:
-        """Handle config changes from the panel or options flow."""
+        """Handle config changes from the options flow or WebSocket API."""
         self._schedule = schedule
         self.async_write_ha_state()
 
@@ -128,7 +129,7 @@ class TOUCurrentRateSensor(TOUBaseSensor):
         self._attr_unique_id = f"{entry.entry_id}_current_rate"
 
     def update(self) -> None:
-        """Update current rate."""
+        """Update current rate using the full YAML-contract formula."""
         now = dt_util.now()
         self._attr_native_value = round(self._schedule.get_rate(now), 6)
 
@@ -138,6 +139,12 @@ class TOUCurrentRateSensor(TOUBaseSensor):
                 "tier_id": tier.id,
                 "tier_name": tier.name,
                 "tier_color": tier.color,
+                "tier_base_rate": tier.rate,
+                "regulatory_per_kwh": self._schedule.regulatory_per_kwh,
+                "state_passthrough_per_kwh": self._schedule.state_passthrough_per_kwh,
+                "programs_per_kwh": self._schedule.programs_per_kwh,
+                "tax_rate_pct": self._schedule.tax_rate_pct,
+                "fixed_monthly": self._schedule.fixed_monthly,
                 "is_holiday": self._schedule.is_holiday(now.date()),
             }
 
@@ -171,35 +178,62 @@ class TOUCurrentTierSensor(TOUBaseSensor):
         tier = self._schedule.get_tier(now)
         self._attr_native_value = tier.name if tier else "Unknown"
         if tier:
+            effective = self._schedule.compute_effective_rate(tier.id)
             self._attr_extra_state_attributes = {
                 "tier_id": tier.id,
-                "rate": tier.rate,
+                "base_rate": tier.rate,
+                "effective_rate": round(effective, 6),
                 "color": tier.color,
             }
 
             # Fire event when tier changes
             if self._previous_tier_id is not None and tier.id != self._previous_tier_id:
                 prev_tier = self._schedule.tiers.get(self._previous_tier_id)
+                prev_effective = self._schedule.compute_effective_rate(self._previous_tier_id) if prev_tier else 0
                 self.hass.bus.async_fire(
                     f"{DOMAIN}_tier_changed",
                     {
                         "previous_tier": self._previous_tier_id,
                         "previous_tier_name": prev_tier.name if prev_tier else self._previous_tier_id,
-                        "previous_rate": prev_tier.rate if prev_tier else None,
+                        "previous_effective_rate": round(prev_effective, 6),
                         "new_tier": tier.id,
                         "new_tier_name": tier.name,
-                        "new_rate": tier.rate,
+                        "new_effective_rate": round(effective, 6),
                         "is_holiday": self._schedule.is_holiday(now.date()),
                     },
                 )
                 _LOGGER.info(
-                    "Solarseed TOU: tier changed %s → %s (rate: $%.4f → $%.4f)",
+                    "Solarseed TOU: tier changed %s → %s (effective: $%.4f → $%.4f)",
                     self._previous_tier_id,
                     tier.id,
-                    prev_tier.rate if prev_tier else 0,
-                    tier.rate,
+                    prev_effective,
+                    effective,
                 )
             self._previous_tier_id = tier.id
+
+
+class TOUFixedMonthlySensor(TOUBaseSensor):
+    """Sensor showing the fixed monthly charge from the rate config.
+
+    This is a static value from the YAML config — it does not accumulate.
+    It represents the non-volumetric monthly charges (basic charge,
+    schedule adjustment, etc.) after tax.
+    """
+
+    _attr_name = "Fixed Monthly Charge"
+    _attr_icon = "mdi:cash-lock"
+    _attr_device_class = SensorDeviceClass.MONETARY
+    _attr_native_unit_of_measurement = "$/mo"
+    _attr_suggested_display_precision = 2
+
+    def __init__(self, entry: ConfigEntry, schedule: TOUSchedule) -> None:
+        """Initialize."""
+        super().__init__(entry, schedule)
+        self._attr_unique_id = f"{entry.entry_id}_fixed_monthly"
+
+    def update(self) -> None:
+        """Update fixed monthly charge from schedule config."""
+        self._attr_native_value = round(self._schedule.fixed_monthly, 2)
 
 
 class TOUCostHourlySensor(TOUBaseSensor):

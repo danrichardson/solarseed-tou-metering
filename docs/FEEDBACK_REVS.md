@@ -1,4 +1,9 @@
-# Solarseed TOU Energy Metering — GUI Improvement Tasks
+> **⚠️ DEPRECATED — v0.7.0**
+> This document is archived. The frontend panel and Lovelace card were removed in v0.7.0.
+> All rate configuration is now handled by the Solarseed website calculator.
+> See [YAML-CONTRACT.md](YAML-CONTRACT.md) for the current data model.
+
+# Solarseed TOU Energy Metering — GUI Improvement Tasks (ARCHIVED)
 
 This document captures all identified issues and requested improvements for the TOU Energy Metering configuration panel. Use this as a task list when implementing changes.
 

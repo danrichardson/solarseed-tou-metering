@@ -1,4 +1,4 @@
-# Solarseed TOU Plugin — YAML Contract Specification
+i# Solarseed TOU Plugin — YAML Contract Specification
 
 > **Purpose:** This document defines the complete YAML configuration format that the Solarseed Rate Calculator exports and the Solarseed TOU Home Assistant plugin must consume. An agent working on either the calculator or the plugin can use this as the authoritative interface contract.
 >
@@ -394,6 +394,8 @@ function resolveEffectiveRate(config, now):
 
 **Priority order:** Holiday tier overrides season/grid. Season grids are resolved by month. Hour index is the final step.
 
+**Implementation status (v0.7.0):** The plugin fully implements this algorithm in `schedule.py → TOUSchedule.compute_effective_rate()` and `get_rate()`. All formula fields are parsed by `from_dict()` and serialized by `to_dict()`. The `sensor.py → TOUCurrentRateSensor` exposes the full formula breakdown as sensor attributes.
+
 ---
 
 ## Edge Cases
@@ -416,32 +418,35 @@ The plugin should prompt for schedule configuration.
 ### 6. Month not in any season
 Fall back to the first defined season.
 
+### 7. v1 → v2 migration
+Existing v1 configs (with only `rate` per tier and no formula fields) are migrated automatically. All adder fields default to 0, so the existing `rate` values are used as-is until the user re-exports from the calculator.
+
 ---
 
 ## Testing Checklist for Plugin Compliance
 
-- [ ] Parses `tou_metering:` as root key
-- [ ] Reads `energy_sensor` for power consumption tracking
-- [ ] Parses all tiers with `name`, `color`, and `rate`
-- [ ] Reads `regulatory_per_kwh` as a scalar (default 0 if absent)
-- [ ] Reads `state_passthrough_per_kwh` as a scalar (default 0 if absent)
-- [ ] Reads `programs_per_kwh` as a scalar (default 0 if absent)
-- [ ] Reads `tax_rate_pct` as a scalar (default 0 if absent)
-- [ ] Reads `fixed_monthly` as a scalar (default 0 if absent)
-- [ ] Computes effective rate: `(tier.rate + reg + passthrough + programs) × (1 + tax / 100)`
-- [ ] Handles negative per-kWh values (credits) correctly
-- [ ] Handles missing formula fields (treats as 0)
-- [ ] Uses tier keys for schedule grid lookups
-- [ ] Reads seasons as a dict with `months` and `grid`
-- [ ] Grid: 7 day keys, 24 tier IDs per day
-- [ ] Hour index 0 = midnight, 23 = 11 PM
-- [ ] Resolves holidays before season grid
-- [ ] Implements all 11 standard holiday IDs
-- [ ] Implements `fixed`, `nth`, `last` holiday rules
-- [ ] Weekday convention: 0=Mon, 6=Sun
-- [ ] Applies `observe_nearest_weekday` shifting
-- [ ] Falls back to first season for unknown months
-- [ ] Ignores comment lines (lines starting with `#`)
+- [x] Parses `tou_metering:` as root key
+- [x] Reads `energy_sensor` for power consumption tracking
+- [x] Parses all tiers with `name`, `color`, and `rate`
+- [x] Reads `regulatory_per_kwh` as a scalar (default 0 if absent)
+- [x] Reads `state_passthrough_per_kwh` as a scalar (default 0 if absent)
+- [x] Reads `programs_per_kwh` as a scalar (default 0 if absent)
+- [x] Reads `tax_rate_pct` as a scalar (default 0 if absent)
+- [x] Reads `fixed_monthly` as a scalar (default 0 if absent)
+- [x] Computes effective rate: `(tier.rate + reg + passthrough + programs) × (1 + tax / 100)`
+- [x] Handles negative per-kWh values (credits) correctly
+- [x] Handles missing formula fields (treats as 0)
+- [x] Uses tier keys for schedule grid lookups
+- [x] Reads seasons as a dict with `months` and `grid`
+- [x] Grid: 7 day keys, 24 tier IDs per day
+- [x] Hour index 0 = midnight, 23 = 11 PM
+- [x] Resolves holidays before season grid
+- [x] Implements all 11 standard holiday IDs
+- [x] Implements `fixed`, `nth`, `last` holiday rules
+- [x] Weekday convention: 0=Mon, 6=Sun
+- [x] Applies `observe_nearest_weekday` shifting
+- [x] Falls back to first season for unknown months
+- [x] Ignores comment lines (lines starting with `#`)
 
 ---
 

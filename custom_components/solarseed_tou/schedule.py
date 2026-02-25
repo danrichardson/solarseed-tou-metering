@@ -5,7 +5,8 @@ Given a datetime, determines the active rate tier by:
 2. Finding the active season from the current month
 3. Looking up the day-of-week row in the season grid
 4. Indexing by hour to get the tier ID
-5. Returning the tier's rate
+5. Computing the effective rate using the full YAML-contract formula:
+   effective = (tier.rate + regulatory + passthrough + programs) × (1 + tax/100)
 """
 from __future__ import annotations
 
@@ -21,7 +22,7 @@ DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 @dataclass
 class RateTier:
-    """A rate tier with an effective $/kWh."""
+    """A rate tier with a per-kWh base rate (usage + transmission + distribution + PCA)."""
     id: str
     name: str
     rate: float
@@ -47,11 +48,26 @@ class HolidayConfig:
 
 @dataclass
 class TOUSchedule:
-    """Complete TOU schedule configuration."""
+    """Complete TOU schedule configuration.
+
+    Implements the YAML-contract effective-rate formula:
+      effective = (tier.rate + regulatory + passthrough + programs) × (1 + tax/100)
+    """
     energy_sensor: str
     tiers: dict[str, RateTier]
     seasons: list[Season]
     holidays: HolidayConfig
+
+    # Shared per-kWh adders (apply equally to all tiers)
+    regulatory_per_kwh: float = 0.0
+    state_passthrough_per_kwh: float = 0.0
+    programs_per_kwh: float = 0.0
+
+    # Tax rate as a percentage (e.g. 2.0 means 2%)
+    tax_rate_pct: float = 0.0
+
+    # Fixed monthly charge (after tax) — not part of per-kWh formula
+    fixed_monthly: float = 0.0
 
     # Resolved holidays for current year (cached)
     _holiday_dates: set[date] = field(default_factory=set, repr=False)
@@ -59,7 +75,15 @@ class TOUSchedule:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TOUSchedule:
-        """Parse configuration dict into a TOUSchedule."""
+        """Parse configuration dict into a TOUSchedule.
+
+        Accepts both raw config dicts and dicts wrapped in a top-level
+        ``tou_metering`` key (as produced by the YAML export).
+        """
+        # Unwrap optional tou_metering root key
+        if "tou_metering" in data and isinstance(data["tou_metering"], dict):
+            data = data["tou_metering"]
+
         tiers = {}
         for tid, tdata in data.get("tiers", {}).items():
             tiers[tid] = RateTier(
@@ -90,6 +114,11 @@ class TOUSchedule:
             tiers=tiers,
             seasons=seasons,
             holidays=holidays,
+            regulatory_per_kwh=float(data.get("regulatory_per_kwh", 0.0)),
+            state_passthrough_per_kwh=float(data.get("state_passthrough_per_kwh", 0.0)),
+            programs_per_kwh=float(data.get("programs_per_kwh", 0.0)),
+            tax_rate_pct=float(data.get("tax_rate_pct", 0.0)),
+            fixed_monthly=float(data.get("fixed_monthly", 0.0)),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -97,6 +126,11 @@ class TOUSchedule:
         result: dict[str, Any] = {
             "energy_sensor": self.energy_sensor,
             "tiers": {},
+            "regulatory_per_kwh": self.regulatory_per_kwh,
+            "state_passthrough_per_kwh": self.state_passthrough_per_kwh,
+            "programs_per_kwh": self.programs_per_kwh,
+            "tax_rate_pct": self.tax_rate_pct,
+            "fixed_monthly": self.fixed_monthly,
             "seasons": {},
             "holidays": {
                 "rate_tier": self.holidays.rate_tier,
@@ -115,6 +149,26 @@ class TOUSchedule:
                 "name": s.name, "months": s.months, "grid": s.grid,
             }
         return result
+
+    # ── Formula helpers ────────────────────────────────────
+
+    def compute_effective_rate(self, tier_id: str) -> float:
+        """Compute the all-in effective $/kWh for a tier using the YAML-contract formula.
+
+        effective = (tier.rate + regulatory + passthrough + programs) × (1 + tax / 100)
+        """
+        tier = self.tiers.get(tier_id)
+        if tier is None:
+            return 0.0
+        base = (
+            tier.rate
+            + self.regulatory_per_kwh
+            + self.state_passthrough_per_kwh
+            + self.programs_per_kwh
+        )
+        return base * (1.0 + self.tax_rate_pct / 100.0)
+
+    # ── Schedule resolution ────────────────────────────────
 
     def _ensure_holidays(self, year: int) -> None:
         """Resolve holiday dates for the given year (cached)."""
@@ -162,7 +216,16 @@ class TOUSchedule:
         return next(iter(self.tiers), "off-peak")
 
     def get_rate(self, now: datetime) -> float:
-        """Get the effective $/kWh rate for a given datetime."""
+        """Get the effective $/kWh rate for a given datetime.
+
+        Uses the full YAML-contract formula:
+          (tier.rate + regulatory + passthrough + programs) × (1 + tax / 100)
+        """
+        tier_id = self.get_tier_id(now)
+        return self.compute_effective_rate(tier_id)
+
+    def get_tier_base_rate(self, now: datetime) -> float:
+        """Get the bare tier rate (before adders/tax) for a datetime."""
         tier_id = self.get_tier_id(now)
         tier = self.tiers.get(tier_id)
         return tier.rate if tier else 0.0

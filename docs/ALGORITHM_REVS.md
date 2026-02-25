@@ -1,4 +1,12 @@
-# Solarseed TOU HA Plugin — Implementation Plan
+> **⚠️ SUPERSEDED — v0.7.0**
+> This document is superseded by [YAML-CONTRACT.md](YAML-CONTRACT.md) which is the
+> authoritative spec for the rate model. Key difference: this doc used `volumetric_rate`
+> as the tier field name; the contract and plugin use `rate`. The formula fields
+> (`regulatory_per_kwh`, `state_passthrough_per_kwh`, `programs_per_kwh`, `tax_rate_pct`)
+> are now top-level config keys, not baked into a single effective rate.
+> Kept for historical reference only.
+
+# Solarseed TOU HA Plugin — Implementation Plan (ARCHIVED)
 
 ## Context
 
